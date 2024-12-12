@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player</title>
+    <style>
+        #video-container {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            width: 300px;
+        }
+        #controls {
+            position: fixed;
+            top: 530px;
+            left: 10px;
+        }
+        #snapshots {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 400px; /* ارتفاع ثابت */
+            overflow-y: scroll; /* قابلیت اسکرول */
+            border: 1px solid #ccc; /* حاشیه برای تمایز */
+        }
+        .snapshot {
+            display: block;
+            width: 500px;
+            height: auto;
+            margin-top: 10px; 
+        }
+        #notes {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 550px;
+            height: 700px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: right; /* راست‌چین کردن متن */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* راست‌چین کردن محتوا */
+        }
+        .note {
+            margin-bottom: 10px;
+            text-align: right; /* راست‌چین کردن یادداشت‌ها */
+        }
+        #note-input-container {
+            position: fixed;
+            bottom: 20px;
+            right: 650px;
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        /* */
+        @media (max-width: 800px) {
+            body {
+                flex-direction: column;
+                align-items: center;
+            }
+            #video-container, #controls, #note-input-container, #notes {
+                position: static;
+                width: 100%;
+            }
+            #controls {
+                flex-direction: row;
+                justify-content: center;
+            }
+            #snapshots, #notes {
+                height: auto;
+            }
+        }
+        /* */
+        
+    </style>
+</head>
+<body>
+    <input type="file" id="file-input" accept="video/*" style="display: none;">
+    <input type="file" id="subtitle-input" accept=".srt" style="display: none;">
+    <div id="video-container" style="display: none;">
+        <video id="video" width="900" height="515" controls>
+            مرورگر شما از پخش ویدئو پشتیبانی نمی‌کند.
+        </video>
+    </div>
+    <div id="controls">
+        <button id="open-video">باز کردن ویدئو</button>
+        <button id="open-subtitle">باز کردن زیرنویس</button>
+        <button id="take-snapshot">گرفتن عکس</button>
+        <button id="save-notes">ذخیره یادداشت‌ها</button>
+    </div>
+    
+    <!-- <div id="snapshots"></div> -->
+    
+    <div id="note-input-container">
+        <button id="add-note">افزودن یادداشت</button>
+        <textarea id="note-input" rows="10" cols="100" placeholder="یادداشت خود را اینجا بنویسید..."></textarea>    
+    </div>
+    <div id="notes"></div>
+
+    <script>
+        document.getElementById('open-video').addEventListener('click', function() {
+            document.getElementById('file-input').click();
+        });
+
+        document.getElementById('file-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const video = document.getElementById('video');
+                video.src = URL.createObjectURL(file);
+                document.getElementById('video-container').style.display = 'block';
+            }
+        });
+
+        document.getElementById('take-snapshot').addEventListener('click', function() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL('image/png');
+            img.className = 'snapshot';
+            const note = document.createElement('div');
+            note.className = 'note';
+            note.appendChild(img);
+            document.getElementById('notes').appendChild(note);
+        });
+
+        document.getElementById('add-note').addEventListener('click', function() {
+            const noteInput = document.getElementById('note-input');
+            const noteText = noteInput.value;
+            if (noteText.trim() !== '') {
+                const note = document.createElement('div');
+                note.className = 'note';
+                note.textContent = noteText;
+                document.getElementById('notes').appendChild(note);
+                noteInput.value = '';
+            }
+        });
+
+        document.getElementById('save-notes').addEventListener('click', function() {
+            const notesContent = document.getElementById('notes').innerHTML;
+            const newWindow = window.open();
+            newWindow.document.write('<html><head><title>یادداشت‌ها</title><style>body { direction: rtl; text-align: right; } img { width: 700px; height: auto; } .note { margin-bottom: 10px; }</style></head><body>' + notesContent + '<button onclick="window.print()">Print</button></body></html>');
+            newWindow.document.close();
+        });
+
+        document.getElementById('open-subtitle').addEventListener('click', function() {
+            document.getElementById('subtitle-input').click();
+        });
+
+        document.getElementById('subtitle-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const vttData = convertSrtToVtt(e.target.result);
+                    const track = document.createElement('track');
+                    track.kind = 'subtitles';
+                    track.label = 'زیرنویس';
+                    track.srclang = 'fa';
+                    track.src = URL.createObjectURL(new Blob([vttData], { type: 'text/vtt' }));
+                    track.default = true;
+                    document.getElementById('video').appendChild(track);
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function convertSrtToVtt(data) {
+            const srt = data.replace(/\r+/g, '').split('\n');
+            let vtt = "WEBVTT\n\n";
+            for (let i = 0; i < srt.length; i++) {
+                const line = srt[i];
+                if (line.match(/^\d+$/)) {
+                    // Skip sequence number
+                    continue;
+                }
+                const timeMatch = line.match(/(\d{2}:\d{2}:\d{2}),(\d{3}) --> (\d{2}:\d{2}:\d{2}),(\d{3})/);
+                if (timeMatch) {
+                    vtt += timeMatch[1] + '.' + timeMatch[2] + ' --> ' + timeMatch[3] + '.' + timeMatch[4] + '\n';
+                } else {
+                    vtt += line + '\n';
+                }
+            }
+            return vtt;
+        }
+    </script>
+</body>
+</html>
