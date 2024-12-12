@@ -59,13 +59,19 @@
             flex-direction: column;
             align-items: flex-end;
         }
+
+        #video {
+            width : 900px;
+            height : 515px;
+        }
+        
         /* */
         @media (max-width: 800px) {
             body {
                 flex-direction: column;
                 align-items: center;
             }
-            #video-container, #controls, #note-input-container, #notes {
+            #video-container , #controls, #note-input-container, #notes {
                 position: static;
                 width: 100%;
             }
@@ -76,6 +82,12 @@
             #snapshots, #notes {
                 height: auto;
             }
+            #video {
+            width : 400px;
+            height : 115px;
+
+        }
+            
         }
         /* */
         
@@ -85,7 +97,7 @@
     <input type="file" id="file-input" accept="video/*" style="display: none;">
     <input type="file" id="subtitle-input" accept=".srt" style="display: none;">
     <div id="video-container" style="display: none;">
-        <video id="video" width="900" height="515" controls>
+        <video id="video" controls>
             مرورگر شما از پخش ویدئو پشتیبانی نمی‌کند.
         </video>
     </div>
@@ -100,7 +112,7 @@
     
     <div id="note-input-container">
         <button id="add-note">افزودن یادداشت</button>
-        <textarea id="note-input" rows="10" cols="100" placeholder="یادداشت خود را اینجا بنویسید..."></textarea>    
+        <textarea id="note-input" rows="10" cols="100" dir = "rtl" placeholder="یادداشت خود را اینجا بنویسید..."></textarea>
     </div>
     <div id="notes"></div>
 
